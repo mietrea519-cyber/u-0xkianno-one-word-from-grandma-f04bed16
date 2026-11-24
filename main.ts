@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 // Final pick: "ChatGPA" — Grandma heard her grandchild uses ChatGPT,
 // and her brain filed it under the school word she actually knows: GPA.
@@ -15,3 +15,15 @@ if (/\s/.test(word) || word.length < 1 || word.length > 30) {
 
 mkdirSync("/output", { recursive: true });
 writeFileSync("/output/entry.txt", word, "utf8");
+
+// Read-back verification: the grader runs this in separate sandboxes,
+// so a silent short write would produce an invalid entry unnoticed.
+// Fail loudly instead if what landed on disk differs byte-for-byte.
+const written = readFileSync("/output/entry.txt", "utf8");
+if (written !== word) {
+  console.error(
+    `entry verification failed: wrote ${JSON.stringify(word)}, read back ${JSON.stringify(written)}`,
+  );
+  process.exitCode = 1;
+  throw new Error("entry.txt does not match the intended word");
+}
